@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Security Dashboard</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f0f2f5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 50px;
+      }
+      .card {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        text-align: center;
+      }
+      h1 {
+        color: #1a73e8;
+        margin-bottom: 20px;
+      }
+      button {
+        background: #1a73e8;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      button:hover {
+        background: #1557b0;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 20px;
+        color: #5f6368;
+      }
+      .report-link {
+        display: inline-block;
+        margin-top: 20px;
+        text-decoration: none;
+        color: #1a73e8;
+        font-weight: bold;
+        border: 1px solid #1a73e8;
+        padding: 10px;
+        border-radius: 6px;
+      }
+      .report-link.hidden {
+        display: none;
+      }
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #1a73e8;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+        display: none;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>🛡️ Security Control</h1>
+      
+      <div style="margin-bottom: 20px; width: 100%;">
+        <label for="urlInput" style="display: block; text-align: left; margin-bottom: 5px; color: #555;">Target URL:</label>
+        <input type="text" id="urlInput" value="https://host.docker.internal:5443" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+        <small style="display: block; text-align: left; color: #777; margin-top: 5px;">
+           For local apps, use <code>host.docker.internal</code> instead of <code>localhost</code>.
+        </small>
+      </div>
+
+      <button id="scanBtn" onclick="runScan()">▶ Run/Rerun Scan</button>
+
+      <div class="spinner" id="spinner"></div>
+      <div class="status" id="statusText">Ready</div>
+
+      <a
+        href="/reports/report.html"
+        target="_blank"
+        id="reportBtn"
+        class="report-link hidden"
+        >📄 Open Latest Report</a
+      >
+    </div>
+
+    <script>
+      async function checkStatus() {
+        try {
+          const res = await fetch("/api/status");
+          const data = await res.json();
+          if (data.reportExists) {
+            document.getElementById("reportBtn").classList.remove("hidden");
+          }
+        } catch (e) {}
+      }
+      checkStatus();
+
+      async function runScan() {
+        const btn = document.getElementById("scanBtn");
+        const spinner = document.getElementById("spinner");
+        const status = document.getElementById("statusText");
+
+        btn.disabled = true;
+        spinner.style.display = "block";
+        status.textContent = "Scanning... (this takes about 1-2 mins)";
+        status.style.color = "#e37400";
+
+        try {
+          const url = document.getElementById("urlInput").value;
+          const res = await fetch("/api/scan", { 
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: url })
+          });
+          const data = await res.json();
+
+          if (data.success) {
+              status.textContent = "Scan Completed!";
+              status.style.color = "green";
+              document.getElementById("reportBtn").href = `/reports/report.html?t=${Date.now()}`; // Prevent caching
+              document.getElementById("reportBtn").classList.remove("hidden");
+          } else {
+              status.textContent = "Error: " + (data.logs || "Unknown error");
+              status.style.color = "red";
+          }
+        } catch (error) {
+          status.textContent = "Error: " + error.message;
+          status.style.color = "red";
+        } finally {
+          btn.disabled = false;
+          spinner.style.display = "none";
+        }
+      }
+    </script>
+  </body>
+</html>
