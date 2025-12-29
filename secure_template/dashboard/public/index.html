@@ -1,267 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Security Dashboard</title>
-    <style>
-      body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f0f2f5;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 50px;
-      }
-      .card {
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        width: 600px;
-        text-align: center;
-      }
-      h1 {
-        color: #1a73e8;
-        margin-bottom: 20px;
-      }
-      .actions {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        margin-top: 10px;
-      }
-      button {
-        background: #1a73e8;
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        font-size: 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: 0.2s;
-      }
-      button:hover {
-        background: #1557b0;
-      }
-      button:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-      }
-      #newScanBtn {
-        background: #5f6368;
-        display: none;
-      }
-      #newScanBtn:hover {
-        background: #4a4d50;
-      }
-      .log-window {
-        margin-top: 20px;
-        background: #1e1e1e;
-        color: #00ff00;
-        font-family: monospace;
-        padding: 15px;
-        border-radius: 6px;
-        text-align: left;
-        height: 300px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        font-size: 13px;
-        display: none;
-        border: 1px solid #333;
-      }
-      .status {
-        margin-top: 20px;
-        color: #5f6368;
-      }
-      .report-link {
-        display: inline-block;
-        margin-top: 20px;
-        text-decoration: none;
-        color: white;
-        background: #34a853;
-        font-weight: bold;
-        border: 1px solid #34a853;
-        padding: 10px 20px;
-        border-radius: 6px;
-      }
-      .report-link:hover {
-        background: #2d8e47;
-      }
-      .report-link.hidden {
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h1>🛡️ Security Control</h1>
 
-      <div style="margin-bottom: 20px; width: 100%">
-        <label
-          for="urlInput"
-          style="
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security Dashboard</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 50px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 600px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #1a73e8;
+      margin-bottom: 20px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #1557b0;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    #newScanBtn {
+      background: #5f6368;
+      display: none;
+    }
+
+    #newScanBtn:hover {
+      background: #4a4d50;
+    }
+
+    .log-window {
+      margin-top: 20px;
+      background: #1e1e1e;
+      color: #00ff00;
+      font-family: monospace;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: left;
+      height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      display: none;
+      border: 1px solid #333;
+    }
+
+    .status {
+      margin-top: 20px;
+      color: #5f6368;
+    }
+
+    .report-link {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: white;
+      background: #34a853;
+      font-weight: bold;
+      border: 1px solid #34a853;
+      padding: 10px 20px;
+      border-radius: 6px;
+    }
+
+    .report-link:hover {
+      background: #2d8e47;
+    }
+
+    .report-link.hidden {
+      display: none;
+    }
+
+    div.summary-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      flex: 1;
+      border-left: 5px solid #ccc;
+    }
+
+    .summary-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #555;
+    }
+
+    .summary-score {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .risk-high {
+      color: #d93025;
+    }
+
+    .risk-medium {
+      color: #f9ab00;
+    }
+
+    .risk-safe {
+      color: #188038;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🛡️ Security Control</h1>
+
+    <div class="summary-container">
+      <div class="summary-card" style="border-left-color: #1a73e8;">
+        <h3>ZAP Alerts</h3>
+        <div id="summ-zap" class="summary-score">--</div>
+        <small>High/Med</small>
+      </div>
+      <div class="summary-card" style="border-left-color: #e37400;">
+        <h3>CVEs</h3>
+        <div id="summ-cve" class="summary-score">--</div>
+        <small>Crit/High</small>
+      </div>
+      <div class="summary-card" style="border-left-color: #a142f4;">
+        <h3>Secrets</h3>
+        <div id="summ-sec" class="summary-score">--</div>
+        <small>Found</small>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px; width: 100%">
+      <label for="urlInput" style="
             display: block;
             text-align: left;
             margin-bottom: 5px;
             color: #555;
-          "
-          >Target URL:</label
-        >
-        <input
-          type="text"
-          id="urlInput"
-          value="https://secure_web:8443"
-          style="
+          ">Target URL:</label>
+      <input type="text" id="urlInput" value="https://secure_web:8443" style="
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
-          "
-        />
-        <small
-          style="display: block; text-align: left; color: #777; margin-top: 5px"
-        >
-          For local apps, use <code>host.docker.internal</code> instead of
-          <code>localhost</code>.
-        </small>
-      </div>
-
-      <div class="actions">
-        <button id="scanBtn">▶ Run/Rerun ZAP Scan</button>
-        <button id="cveScanBtn">🛡️ Run CVE Scan</button>
-        <button id="newScanBtn">↺ New Scan</button>
-      </div>
-
-      <div class="log-window" id="logWindow"></div>
-      <div class="status" id="statusText">Ready</div>
-
-      <a
-        href="/reports/report.html"
-        target="_blank"
-        id="reportBtn"
-        class="report-link hidden"
-        >📄 Open ZAP Report</a
-      >
-      <a
-        href="/reports/cve_report.html"
-        target="_blank"
-        id="cveReportBtn"
-        class="report-link hidden"
-        style="background: #e37400; border-color: #e37400;"
-        >📄 Open CVE Report</a
-      >
+          " />
+      <small style="display: block; text-align: left; color: #777; margin-top: 5px">
+        For local apps, use <code>host.docker.internal</code> instead of
+        <code>localhost</code>.
+      </small>
     </div>
 
-    <script>
-      async function checkStatus() {
-        try {
-          const res = await fetch("/api/status");
-          const data = await res.json();
-          if (data.reportExists && document.getElementById("logWindow").style.display === "none") {
-             // Only show report link if we are not in a fresh state
-             document.getElementById("reportBtn").classList.remove("hidden");
-          }
-        } catch (e) {}
-      }
-      checkStatus();
+    <div class="actions">
+      <button id="scanBtn">▶ Run/Rerun ZAP Scan</button>
+      <button id="cveScanBtn">🛡️ Run CVE Scan</button>
+      <button id="secretScanBtn" style="background-color: #a142f4;">🔑 Run Secret Scan</button>
+      <button id="newScanBtn">↺ New Scan</button>
+    </div>
 
-      document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("scanBtn").addEventListener("click", () => runScan("zap"));
-        document.getElementById("cveScanBtn").addEventListener("click", () => runScan("cve"));
-        document.getElementById("newScanBtn").addEventListener("click", resetUI);
-      });
+    <div class="log-window" id="logWindow"></div>
+    <div class="status" id="statusText">Ready</div>
 
-      function resetUI() {
-          const logWindow = document.getElementById("logWindow");
-          const scanBtn = document.getElementById("scanBtn");
-          const cveScanBtn = document.getElementById("cveScanBtn");
-          const newScanBtn = document.getElementById("newScanBtn");
-          const status = document.getElementById("statusText");
-          const input = document.getElementById("urlInput");
-          const reportBtn = document.getElementById("reportBtn");
-          const cveReportBtn = document.getElementById("cveReportBtn");
+    <a href="/reports/report.html" target="_blank" id="reportBtn" class="report-link hidden">📄 Open ZAP Report</a>
+    <a href="/reports/cve_report.html" target="_blank" id="cveReportBtn" class="report-link hidden"
+      style="background: #e37400; border-color: #e37400;">📄 Open CVE Report</a>
+    <a href="/reports/secrets_report.json" target="_blank" id="secretReportBtn" class="report-link hidden"
+      style="background: #a142f4; border-color: #a142f4;">📄 Open Secrets Report (JSON)</a>
+  </div>
 
-          logWindow.style.display = "none";
-          logWindow.textContent = "";
-          scanBtn.style.display = "inline-block";
-          cveScanBtn.style.display = "inline-block";
-          scanBtn.disabled = false;
-          cveScanBtn.disabled = false;
-          newScanBtn.style.display = "none";
-          status.textContent = "Ready";
-          status.style.color = "#5f6368";
-          input.disabled = false;
-          reportBtn.classList.add("hidden");
-          cveReportBtn.classList.add("hidden");
-      }
-
-      async function runScan(type) {
-        const scanBtn = document.getElementById("scanBtn");
-        const cveScanBtn = document.getElementById("cveScanBtn");
-        const newScanBtn = document.getElementById("newScanBtn");
-        const logWindow = document.getElementById("logWindow");
-        const status = document.getElementById("statusText");
-        const input = document.getElementById("urlInput");
-        const reportBtn = document.getElementById("reportBtn");
-        const cveReportBtn = document.getElementById("cveReportBtn");
-
-        // UI Prep
-        scanBtn.disabled = true;
-        cveScanBtn.disabled = true;
-        input.disabled = true;
-        reportBtn.classList.add("hidden");
-        cveReportBtn.classList.add("hidden");
-        
-        logWindow.style.display = "block";
-        logWindow.textContent = type === 'zap' ? "Initializing ZAP scan...\n" : "Initializing CVE scan (this may take a while to download DB)...\n";
-        
-        status.textContent = "Scanning in progress...";
-        status.style.color = "#e37400";
-
-        try {
-          const url = input.value;
-          const endpoint = type === 'zap' ? `/api/scan?url=${encodeURIComponent(url)}` : '/api/scan-cve';
-          
-          const response = await fetch(endpoint);
-          
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            const text = decoder.decode(value);
-            logWindow.textContent += text;
-            logWindow.scrollTop = logWindow.scrollHeight; // Auto scroll
-          }
-
-          status.textContent = "Scan Completed!";
-          status.style.color = "green";
-          
-          if (type === 'zap') {
-             reportBtn.href = `/reports/report.html?t=${Date.now()}`;
-             reportBtn.classList.remove("hidden");
-          } else {
-             cveReportBtn.href = `/reports/cve_report.html?t=${Date.now()}`;
-             cveReportBtn.classList.remove("hidden");
-          }
-          
-          scanBtn.style.display = "none";
-          cveScanBtn.style.display = "none";
-          newScanBtn.style.display = "inline-block";
-
-        } catch (error) {
-          logWindow.textContent += `\n[FATAL ERROR]: ${error.message}`;
-          status.textContent = "Error occurred";
-          status.style.color = "red";
-          scanBtn.disabled = false;
-          cveScanBtn.disabled = false;
-          input.disabled = false;
+  <script>
+    async function checkStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const data = await res.json();
+        if (data.reportExists && document.getElementById("logWindow").style.display === "none") {
+          // Only show report link if we are not in a fresh state
+          document.getElementById("reportBtn").classList.remove("hidden");
         }
+      } catch (e) { }
+    }
+
+    async function updateSummary() {
+      try {
+        const res = await fetch("/api/summary");
+        const data = await res.json();
+
+        const zapScore = document.getElementById("summ-zap");
+        const cveScore = document.getElementById("summ-cve");
+        const secScore = document.getElementById("summ-sec");
+
+        // ZAP
+        zapScore.innerHTML = `<span class="risk-high">${data.zap.high}</span> / <span class="risk-medium">${data.zap.medium}</span>`;
+
+        // CVE
+        cveScore.innerHTML = `<span class="risk-high">${data.cve.critical}</span> / <span class="risk-medium">${data.cve.high}</span>`;
+
+        // Secrets
+        if (data.secrets.count > 0) {
+          secScore.innerHTML = `<span class="risk-high">${data.secrets.count}</span>`;
+        } else {
+          secScore.innerHTML = `<span class="risk-safe">0</span>`;
+        }
+
+      } catch (e) { console.error("Summary fetch failed", e); }
+    }
+
+    checkStatus();
+    updateSummary();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("scanBtn").addEventListener("click", () => runScan("zap"));
+      document.getElementById("cveScanBtn").addEventListener("click", () => runScan("cve"));
+      document.getElementById("secretScanBtn").addEventListener("click", () => runScan("secret"));
+      document.getElementById("newScanBtn").addEventListener("click", resetUI);
+    });
+
+    function resetUI() {
+      const logWindow = document.getElementById("logWindow");
+      const scanBtn = document.getElementById("scanBtn");
+      const cveScanBtn = document.getElementById("cveScanBtn");
+      const secretScanBtn = document.getElementById("secretScanBtn");
+      const newScanBtn = document.getElementById("newScanBtn");
+      const status = document.getElementById("statusText");
+      const input = document.getElementById("urlInput");
+      const reportBtn = document.getElementById("reportBtn");
+      const cveReportBtn = document.getElementById("cveReportBtn");
+      const secretReportBtn = document.getElementById("secretReportBtn");
+
+      logWindow.style.display = "none";
+      logWindow.textContent = "";
+      scanBtn.style.display = "inline-block";
+      cveScanBtn.style.display = "inline-block";
+      secretScanBtn.style.display = "inline-block";
+      scanBtn.disabled = false;
+      cveScanBtn.disabled = false;
+      secretScanBtn.disabled = false;
+      newScanBtn.style.display = "none";
+      status.textContent = "Ready";
+      status.style.color = "#5f6368";
+      input.disabled = false;
+      reportBtn.classList.add("hidden");
+      cveReportBtn.classList.add("hidden");
+      secretReportBtn.classList.add("hidden");
+
+      updateSummary(); // Refresh summary on reset
+    }
+
+    async function runScan(type) {
+      const scanBtn = document.getElementById("scanBtn");
+      const cveScanBtn = document.getElementById("cveScanBtn");
+      const secretScanBtn = document.getElementById("secretScanBtn");
+      const newScanBtn = document.getElementById("newScanBtn");
+      const logWindow = document.getElementById("logWindow");
+      const status = document.getElementById("statusText");
+      const input = document.getElementById("urlInput");
+      const reportBtn = document.getElementById("reportBtn");
+      const cveReportBtn = document.getElementById("cveReportBtn");
+      const secretReportBtn = document.getElementById("secretReportBtn");
+
+      // UI Prep
+      scanBtn.disabled = true;
+      cveScanBtn.disabled = true;
+      secretScanBtn.disabled = true;
+      input.disabled = true;
+      reportBtn.classList.add("hidden");
+      cveReportBtn.classList.add("hidden");
+      secretReportBtn.classList.add("hidden");
+
+      logWindow.style.display = "block";
+
+      if (type === 'zap') logWindow.textContent = "Initializing ZAP scan...\n";
+      else if (type === 'cve') logWindow.textContent = "Initializing CVE scan (this may take a while to download DB)...\n";
+      else logWindow.textContent = "Initializing Secret scan (codebase analysis)...\n";
+
+      status.textContent = "Scanning in progress...";
+      status.style.color = "#e37400";
+
+      try {
+        const url = input.value;
+        let endpoint;
+        if (type === 'zap') endpoint = `/api/scan?url=${encodeURIComponent(url)}`;
+        else if (type === 'cve') endpoint = '/api/scan-cve';
+        else endpoint = '/api/scan-secrets';
+
+        const response = await fetch(endpoint);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const text = decoder.decode(value);
+          logWindow.textContent += text;
+          logWindow.scrollTop = logWindow.scrollHeight; // Auto scroll
+        }
+
+        status.textContent = "Scan Completed!";
+        status.style.color = "green";
+
+        if (type === 'zap') {
+          reportBtn.href = `/reports/report.html?t=${Date.now()}`;
+          reportBtn.classList.remove("hidden");
+        } else if (type === 'cve') {
+          cveReportBtn.href = `/reports/cve_report.html?t=${Date.now()}`;
+          cveReportBtn.classList.remove("hidden");
+        } else {
+          secretReportBtn.href = `/reports/secrets_report.json?t=${Date.now()}`;
+          secretReportBtn.classList.remove("hidden");
+        }
+
+        updateSummary(); // Refresh summary scores
+
+        scanBtn.style.display = "none";
+        cveScanBtn.style.display = "none";
+        secretScanBtn.style.display = "none";
+        newScanBtn.style.display = "inline-block";
+
+      } catch (error) {
+        logWindow.textContent += `\n[FATAL ERROR]: ${error.message}`;
+        status.textContent = "Error occurred";
+        status.style.color = "red";
+        scanBtn.disabled = false;
+        cveScanBtn.disabled = false;
+        secretScanBtn.disabled = false;
+        input.disabled = false;
       }
-    </script>
-  </body>
+    }
+  </script>
+</body>
+
 </html>

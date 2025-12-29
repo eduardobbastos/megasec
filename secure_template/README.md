@@ -65,6 +65,7 @@ Você pode executar testes de vulnerabilidade de três formas:
 2. Utilize os botões para iniciar um scan:
    - **Run/Rerun ZAP Scan**: Executa o teste de penetração ativa (ferramenta ZAP).
    - **Run CVE Scan**: Executa a verificação de versões e vulnerabilidades conhecidas (ferramenta Trivy).
+   - **Run Secret Scan**: Analisa o código fonte em busca de segredos/chaves expostas (ferramenta TruffleHog).
 3. Aguarde a finalização e clique para abrir o relatório correspondente.
 
 ### Via Linha de Comando (Manual)
@@ -102,6 +103,17 @@ O scanner de segurança (OWASP ZAP) realiza automaticamente mais de 50 verifica�
 ### Configuração SSL/TLS
 - **Mixed Content**: Garante que recursos não seguros (HTTP) não sejam carregados em páginas HTTPS.
 - **Insecure Transitions**: Verifica redirecionamentos seguros entre HTTP e HTTPS.
+
+### Vulnerabilidades de Infraestrutura (Trivy)
+- **CVEs de Sistema Operacional**: Escaneia pacotes do sistema (Alpine/Debian) em busca de vulnerabilidades conhecidas.
+- **Dependências de Aplicação**: Verifica bibliotecas (npm, pip, composer, etc.) em busca de versões vulneráveis.
+- **Configurações Impróprias**: Checa se o container roda como root ou tem permissões excessivas.
+
+### Segredos e Dados Sensíveis (TruffleHog)
+- **Credenciais de Cloud**: Detecta chaves da AWS, GCP, Azure, etc.
+- **Chaves Privadas**: Identifica chaves SSH, PGP e certificados privados.
+- **Tokens de API**: Busca padrões de tokens Slack, GitHub, Stripe, e centenas de outros serviços.
+- **Senhas Hardcoded**: Verifica strings que parecem senhas ou entropia suspeita no código fonte.
 
 ## 📂 Estrutura de Arquivos
 

@@ -43,5 +43,16 @@ services:
     depends_on:
       - web
 
+  secret_scan:
+    image: trufflesecurity/trufflehog:latest
+    container_name: security_secrets
+    # We mount the current directory to /app to scan the source code
+    # We output to a file in /reports
+    command: filesystem /app --json --no-verification
+    volumes:
+      - ./:/app:ro
+      - ./reports:/reports
+    user: root # Needed to write to mounted volumes sometimes, or we ensure perms
+
 networks:
   secure_net:
