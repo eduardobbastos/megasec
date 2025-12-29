@@ -104,4 +104,4 @@ Distribuído sob a licença **MIT**. Você é livre para usar em projetos comerc
 
 ---
 
-*Feito com ❤️ e café por um Analista de Sistemas que acredita em Software Seguro.*
+*Feito com fé e café por um Analista de Sistemas que acredita em Software Seguro e Livre.*
