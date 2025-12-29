@@ -1,4 +1,4 @@
-# 🛡️ Secure DAST Lab (Open Source Edition)
+# 🛡️ megasec
 
 > *"Segurança não deve ser um segredo, mas sim um padrão compartilhado."*
 
@@ -8,9 +8,9 @@
 
 ## 🤝 Sobre o Projeto
 
-Criei este projeto **"Secure DAST Lab"** com um objetivo simples: **democratizar o acesso a testes de intrusão (Pentest) em ambientes de desenvolvimento.**
+Criei este projeto **"megasec"** com um objetivo simples: **democratizar o acesso a testes de intrusão (Pentest) em ambientes de desenvolvimento.**
 
-Muitas vezes, deixamos a segurança para o final da esteira de CI/CD ou para auditorias caras. Este laboratório foi desenhado para que você, desenvolvedor ou sysadmin, possa rodar scanners de vulnerabilidade poderosos (OWASP ZAP) na sua própria máquina, **antes** do seu código ir para produção.
+Muitas vezes, deixamos a segurança para o final da esteira de CI/CD ou para auditorias caras. Este laboratório foi desenhado para que você, desenvolvedor ou sysadmin, possa rodar scanners de vulnerabilidades locais de forma fácil e controlada.
 
 Sinta-se à vontade para usar, estudar, modificar e, principalmente, **compartilhar** de volta com a comunidade!
 
@@ -52,8 +52,8 @@ Você só precisa do **Docker** e **Docker Compose** instalados.
 
 1. Clone este repositório:
    ```bash
-   git clone https://github.com/seu-usuario/secure-dast-lab.git
-   cd secure-dast-lab
+   git clone https://github.com/eduardobbastos/megasec.git
+   cd megasec
    ```
 
 2. Suba o ambiente:
