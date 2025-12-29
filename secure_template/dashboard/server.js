@@ -124,15 +124,20 @@ app.get("/api/summary", (req, res) => {
 
 // API: Scan - Streaming
 app.get("/api/scan", (req, res) => {
-  let targetUrl = req.query.url || "https://secure_web:8443";
+  let targetUrl = (req.query.url || "https://secure_web:8443").trim();
 
-  // Strict validation
-  if (!/^https?:\/\/[a-zA-Z0-9.\-_:\/]+$/.test(targetUrl)) {
-    res.write("Error: Invalid URL format\n");
+  // Robust validation using URL object
+  try {
+    const parsed = new URL(targetUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error("Invalid protocol");
+    }
+  } catch (e) {
+    res.write(`Error: Invalid URL format. ${e.message}\n`);
     return res.end();
   }
 
-  console.log(`Starting stream scan for target: ${targetUrl}`);
+
 
   res.setHeader("Content-Type", "text/plain");
   res.setHeader("Transfer-Encoding", "chunked");
@@ -157,6 +162,12 @@ app.get("/api/scan", (req, res) => {
     res.write(data);
   });
 
+  child.on("error", (err) => {
+    console.error("Failed to spawn docker:", err);
+    res.write(`\n[FATAL ERROR] Failed to run scan command: ${err.message}\n`);
+    res.end();
+  });
+
   child.on("close", (code) => {
     if (code === 0 || code === 2) { // ZAP returns 2 for "issues found"
       res.write("\n[SUCCESS] Scan completed successfully.\n");
@@ -179,7 +190,7 @@ app.get("/reports/cve_report.html", (req, res) => {
 
 // API: CVE Scan - Streaming
 app.get("/api/scan-cve", (req, res) => {
-  console.log("Starting CVE scan...");
+
 
   res.setHeader("Content-Type", "text/plain");
   res.setHeader("Transfer-Encoding", "chunked");
@@ -187,6 +198,7 @@ app.get("/api/scan-cve", (req, res) => {
   // Run JSON scan FIRST (internal)
   const jsonChild = spawn("docker", [
     "run", "--rm",
+    "--net=host", // Fix DNS/Network timeout for DB download
     "-v", "/var/run/docker.sock:/var/run/docker.sock",
     "-v", `${path.join(__dirname, "../reports")}:/reports`,
     "aquasec/trivy", "image",
@@ -199,6 +211,7 @@ app.get("/api/scan-cve", (req, res) => {
     // Then Run HTML scan (for display)
     const child = spawn("docker", [
       "run", "--rm",
+      "--net=host", // Fix DNS/Network timeout for DB download
       "-v", "/var/run/docker.sock:/var/run/docker.sock",
       "-v", `${path.join(__dirname, "../reports")}:/reports`,
       "aquasec/trivy", "image",
@@ -233,7 +246,7 @@ app.get("/reports/secrets_report.json", (req, res) => {
 
 // API: Secret Scan - Streaming
 app.get("/api/scan-secrets", (req, res) => {
-  console.log("Starting Secret scan...");
+
 
   res.setHeader("Content-Type", "text/plain");
   res.setHeader("Transfer-Encoding", "chunked");

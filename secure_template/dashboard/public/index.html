@@ -198,6 +198,48 @@
       <button id="newScanBtn">↺ New Scan</button>
     </div>
 
+    <div class="info-section"
+      style="margin-top: 30px; text-align: left; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+      <h3 style="margin-top: 0; color: #5f6368;">🔍 Scan Coverage Information</h3>
+
+      <details style="margin-bottom: 10px;">
+        <summary style="font-weight: bold; cursor: pointer; color: #1a73e8;">🌐 Web Application Security (ZAP)</summary>
+        <p style="margin: 5px 0 0 15px; font-size: 14px; color: #444;">
+          Analyzes the running application (`https://web:8443`) for:
+        <ul style="margin: 5px 0 0 20px;">
+          <li><strong>HTTP Headers:</strong> HSTS, CSP, X-Frame-Options configurations.</li>
+          <li><strong>Cookie Security:</strong> HttpOnly, Secure, SameSite flags.</li>
+          <li><strong>Injection Attacks:</strong> XSS, SQLi attempts.</li>
+          <li><strong>Information Leakage:</strong> Debug comments, private IP disclosure.</li>
+        </ul>
+        </p>
+      </details>
+
+      <details style="margin-bottom: 10px;">
+        <summary style="font-weight: bold; cursor: pointer; color: #e37400;">📦 Infrastructure & CVEs (Trivy)</summary>
+        <p style="margin: 5px 0 0 15px; font-size: 14px; color: #444;">
+          Inspects the Docker image and OS packages for:
+        <ul style="margin: 5px 0 0 20px;">
+          <li><strong>OS Vulnerabilities:</strong> Known CVEs in Alpine/Debian packages.</li>
+          <li><strong>Library Issues:</strong> Outdated npm/pip dependencies.</li>
+          <li><strong>Misconfigurations:</strong> Running as root, exposed secrets.</li>
+        </ul>
+        </p>
+      </details>
+
+      <details>
+        <summary style="font-weight: bold; cursor: pointer; color: #a142f4;">🔑 Code Secrets (TruffleHog)</summary>
+        <p style="margin: 5px 0 0 15px; font-size: 14px; color: #444;">
+          Scans the source code (`/app`) for leaked credentials:
+        <ul style="margin: 5px 0 0 20px;">
+          <li><strong>Hardcoded Secrets:</strong> AWS/GCP keys, API Tokens (Slack, Stripe).</li>
+          <li><strong>Private Keys:</strong> SSH keys, PGP certificates.</li>
+          <li><strong>Passwords:</strong> High entropy strings resembling passwords.</li>
+        </ul>
+        </p>
+      </details>
+    </div>
+
     <div class="log-window" id="logWindow"></div>
     <div class="status" id="statusText">Ready</div>
 

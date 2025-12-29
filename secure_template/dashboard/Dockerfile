@@ -1,6 +1,11 @@
-FROM node:18-slim
+FROM node:18-alpine
 
-# No installations required. We mount the docker binary from host.
+# Network timeout fix: Use HTTP registry and increase timeout
+RUN npm config set registry http://registry.npmjs.org/
+RUN npm config set fetch-retry-maxtimeout 120000
+
+# Install Docker CLI to control sibling containers
+RUN apk add --no-cache docker-cli
 
 WORKDIR /app
 

@@ -1,137 +1,103 @@
-# Secure Container Template
+# 🛡️ Secure Container Template
 
-Uma solução integrada para implantação de servidores web seguros, com auditoria de segurança automatizada e painel de monitoramento.
+> **Orquestração de Segurança Automatizada para Ambientes Docker**
 
-Este projeto fornece um ambiente "pronto para uso" que combina as melhores práticas de configuração de servidor web (Nginx) com ferramentas de teste de penetração padrão da indústria (OWASP ZAP), orquestrados via Docker.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
+![Security](https://img.shields.io/badge/security-hardened-green.svg)
 
-## 🚀 Tecnologias e Arquitetura
+Uma solução completa "In-a-Box" para implantação de aplicações web seguras. Este projeto integra as melhores práticas de hardening de servidores (Nginx) com um conjunto poderoso de scanners de vulnerabilidade (DAST, SAST e Infraestrutura), tudo gerenciado por um Dashboard centralizado.
 
-O projeto é composto por três serviços principais isolados em containers Docker:
+---
 
-### 1. Web Service (Nginx Hardened)
+## 🚀 Funcionalidades Principais
 
-- **Container**: `web`
-- **Tecnologia**: Nginx
-- **Função**: Servidor web principal.
-- **Segurança**:
-  - **HTTPS Forçado**: Redirecionamento 301 de HTTP para HTTPS.
-  - **Headers de Segurança**: HSTS, CSP, X-Frame-Options, X-Content-Type-Options configurados por padrão.
-  - **Isolamento**: Roda em rede interna segregada.
+| Componente | Ferramenta | Função |
+| :--- | :--- | :--- |
+| **Web Server** | **Nginx** | Servidor endurecido com HSTS, CSP, e Headers de segurança forçados. |
+| **App Security** | **OWASP ZAP** | Testes de penetração dinâmicos (DAST) automatizados. |
+| **Infra Security** | **Trivy** | Varredura de CVEs e vulnerabilidades em imagens Docker e OS. |
+| **Secret Security** | **TruffleHog** | Detecção de chaves de API e credenciais vazadas no código. |
+| **Dashboard** | **Node.js** | Interface unificada para controle de scans e visualização de relatórios. |
 
-### 2. Security Scanner (OWASP ZAP)
+## 🏗️ Arquitetura
 
-- **Container**: `zap` (security_scanner)
-- **Tecnologia**: OWASP Zed Attack Proxy (ZAP)
-- **Função**: Realizar varreduras de vulnerabilidade ativas `(DAST)` contra o servidor web.
-- **Operação**: Integrado em modo containerizado para execuções programáticas.
+O ambiente é composto por containers isolados que se comunicam através duma rede interna segura (`secure_net`).
 
-### 3. Security Dashboard
-
-- **Container**: `dashboard`
-- **Tecnologia**: Node.js
-- **Função**: Interface de gerenciamento e visualização.
-  - Dispara varreduras de segurança no container `web`.
-  - Visualiza os relatórios HTML gerados pelo ZAP.
-  - Fornece API para controle das operações.
+```mermaid
+graph TD
+    User((Usuário)) -->|HTTPS/8443| Web[Nginx Seguro]
+    User -->|HTTP/8088| Dash[Security Dashboard]
+    
+    subgraph Docker Network
+        Dash -->|API Control| Web
+        Dash -->|Trigger| ZAP[OWASP ZAP Scanner]
+        Dash -->|Trigger| Trivy[Trivy Compliance]
+        Dash -->|Trigger| Secrets[Secret Scanner]
+        
+        ZAP -->|Scan DAST| Web
+        Trivy -->|Scan Image| Web
+        Secrets -->|Scan File| Code[Source Code]
+    end
+```
 
 ## 📋 Pré-requisitos
 
-- Docker
-- Docker Compose
+- [Docker Engine](https://docs.docker.com/engine/install/) (v20.10+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
 
-## 🛠️ Instalação e Execução
+## 🛠️ Guia de Deploy Rápido
 
-1. **Clone o repositório** (se aplicável) ou navegue até a pasta do projeto.
-
-2. **Inicie os serviços**:
-
-   ```bash
-   docker-compose up -d --build
-   ```
-
-   Isso irá construir as imagens e iniciar os containers em background.
-
-3. **Acesse as aplicações**:
-   - **Website Seguro**: [https://localhost:8443](https://localhost:8443) (ou `http://localhost:8085`)
-   - **Dashboard de Segurança**: [http://localhost:8088](http://localhost:8088)
-
-## 🛡️ Como Realizar Testes de Segurança
-
-Você pode executar testes de vulnerabilidade de três formas:
-
-### Via Dashboard (ZAP e CVE)
-
-1. Acesse o Dashboard em [http://localhost:8088](http://localhost:8088).
-2. Utilize os botões para iniciar um scan:
-   - **Run/Rerun ZAP Scan**: Executa o teste de penetração ativa (ferramenta ZAP).
-   - **Run CVE Scan**: Executa a verificação de versões e vulnerabilidades conhecidas (ferramenta Trivy).
-   - **Run Secret Scan**: Analisa o código fonte em busca de segredos/chaves expostas (ferramenta TruffleHog).
-3. Aguarde a finalização e clique para abrir o relatório correspondente.
-
-### Via Linha de Comando (Manual)
-
-Se preferir executar o scanner manualmente diretamente pelo Docker:
+Para iniciar todo o ecossistema de segurança (Aplicação + Scanners + Dashboard), execute apenas:
 
 ```bash
-docker compose exec zap zap-baseline.py -t http://web:80 -r report.html
+docker compose up -d --build
 ```
 
-> **Nota**: O relatório `report.html` será salvo na pasta `reports/` e ficará visível instantaneamente no Dashboard.
+### Acessando os Serviços
 
-## 🔍 Itens Verificados no Scan
+Após a inicialização (aguarde ~30 segundos para o boot completo):
 
-O scanner de segurança (OWASP ZAP) realiza automaticamente mais de 50 verificações de segurança, incluindo:
+1.  **Aplicação Segura**: [https://localhost:8443](https://localhost:8443)
+    *   *Nota: Aceite o aviso de certificado auto-assinado (ambiente de desenvolvimento).*
+2.  **Dashboard de Segurança**: [http://localhost:8088](http://localhost:8088)
 
-### Proteção de Headers HTTP
-- **Strict-Transport-Security (HSTS)**: Garante que a conexão seja sempre HTTPS.
-- **Content-Security-Policy (CSP)**: Protege contra XSS e injeção de dados.
-- **X-Frame-Options**: Previne ataques de Clickjacking.
-- **X-Content-Type-Options**: Bloqueia MIME-sniffing incorreto.
-- **Permissions-Policy**: Restringe acesso a recursos/APIs do navegador.
+## 🛡️ Executando Testes de Segurança
 
-### Segurança de Cookies
-- **HttpOnly Flag**: Protege cookies de acesso via JavaScript (mitigação de XSS).
-- **Secure Flag**: Garante que cookies sejam transmitidos apenas via HTTPS.
-- **SameSite Attribute**: Protege contra CSRF (Cross-Site Request Forgery).
+O Dashboard centraliza todas as operações. Navegue até `http://localhost:8088` e utilize os controles:
 
-### Prevenção de Ataques Web
-- **Cross-Site Scripting (XSS)**: Verificações de injeção de scripts em inputs e headers.
-- **CSRF Tokens**: Valida a presença de tokens anti-CSRF em formulários.
-- **Information Leakage**: Busca por comentários suspeitos, mensagens de debug e exposições de IP privado.
-- **Open Redirects**: Valida redirecionamentos para domínios externos não confiáveis.
+### 1. Web Application Scan (ZAP)
+Clique em **"Run ZAP Scan"**. O scanner irá:
+*   Spiderar a aplicação web em busca de endpoints.
+*   Testar injeções (XSS, SQLi).
+*   Verificar configurações de segurança (Cookies, Headers).
+*   **Resultado**: Gera um relatório `report.html` detalhado.
 
-### Configuração SSL/TLS
-- **Mixed Content**: Garante que recursos não seguros (HTTP) não sejam carregados em páginas HTTPS.
-- **Insecure Transitions**: Verifica redirecionamentos seguros entre HTTP e HTTPS.
+### 2. Infrastructure Scan (CVE)
+Clique em **"Run CVE Scan"**. O scanner irá:
+*   Analisar a imagem Docker do container web.
+*   Identificar pacotes de sistema operacional desatualizados.
+*   Listar Vulnerabilidades e Exposições Comuns (CVEs) críticas.
+*   **Resultado**: Gera um relatório `cve_report.html`.
 
-### Vulnerabilidades de Infraestrutura (Trivy)
-- **CVEs de Sistema Operacional**: Escaneia pacotes do sistema (Alpine/Debian) em busca de vulnerabilidades conhecidas.
-- **Dependências de Aplicação**: Verifica bibliotecas (npm, pip, composer, etc.) em busca de versões vulneráveis.
-- **Configurações Impróprias**: Checa se o container roda como root ou tem permissões excessivas.
+### 3. Secret Scan
+Clique em **"Run Secret Scan"**. O scanner irá:
+*   Auditar todo o código fonte do projeto.
+*   Buscar por entropia alta e padrões de chaves (AWS, Google, Slack, etc.).
+*   **Resultado**: Gera um alerta imediato no Dashboard se segredos forem encontrados.
 
-### Segredos e Dados Sensíveis (TruffleHog)
-- **Credenciais de Cloud**: Detecta chaves da AWS, GCP, Azure, etc.
-- **Chaves Privadas**: Identifica chaves SSH, PGP e certificados privados.
-- **Tokens de API**: Busca padrões de tokens Slack, GitHub, Stripe, e centenas de outros serviços.
-- **Senhas Hardcoded**: Verifica strings que parecem senhas ou entropia suspeita no código fonte.
+## ⚙️ Configuração
 
-## 📂 Estrutura de Arquivos
+### Personalização da Aplicação
+Edite os arquivos em `./` (raiz) e `nginx.conf` para modificar a aplicação web. O container será reconstruído automaticamente no próximo `docker compose up`.
 
-```
-.
-├── docker-compose.yml    # Orquestração dos serviços
-├── nginx.conf            # Configuração de segurança do Nginx
-├── dashboard/            # Código fonte do painel de controle Node.js
-│   ├── server.js         # Servidor backend do dashboard
-│   └── public/           # Frontend do dashboard
-└── reports/              # Volume compartilhado onde os relatórios do ZAP são salvos
-```
+### Persistência de Dados
+Os relatórios são salvos no diretório `./reports` localmente, permitindo fácil exportação e auditoria.
 
-## 🔒 Detalhes de Segurança Implementados
+## 🤝 Contribuição
 
-O `nginx.conf` incluído aplica automaticamente os seguintes controles:
+Contribuições são bem-vindas! Sinta-se à vontade para abrir Issues ou Pull Requests para melhorar a segurança ou funcionalidades deste template.
 
-- **Strict-Transport-Security (HSTS)**: Força navegadores a usarem HTTPS.
-- **Content-Security-Policy (CSP)**: Previne XSS restringindo fontes de scripts/estilos.
-- **X-Frame-Options**: Previne ataques de Clickjacking.
-- **X-Content-Type-Options**: Previne MIME-sniffing.
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
