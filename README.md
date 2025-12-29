@@ -33,25 +33,18 @@ Este ambiente containerizado sobe um dashboard local onde você pode apontar par
 
 ## 🏗️ Arquitetura do Lab
 
-Tudo roda isolado via Docker. O Dashboard comanda o container do ZAP, que por sua vez audita o alvo.
+O projeto foi concebido como um utilitário de linha de comando (CLI) leve e eficiente, focado na automação de reconhecimento passivo (OSINT) sem interação direta com a infraestrutura do alvo.
 
-```mermaid
-graph TD
-    User((Você / Dev)) -->|Acessa Dashboard| Dash[🖥️ Security Dashboard]
-    
-    subgraph "Docker Security Lab"
-        Dash -->|Comanda| ZAP[⚡ OWASP ZAP Scanner]
-        ZAP -->|1. Spider (Crawl)| Target[🎯 Aplicação Alvo]
-        ZAP -->|2. Attack (DAST)| Target
-        
-        Target -.->|Responde| ZAP
-    end
-    
-    ZAP -->|Gera HTML/JSON| Report[📄 Relatórios de Vulnerabilidade]
-    Report -->|Visualiza| Dash
-```
+### Stack Tecnológico
 
----
+A base da solução utiliza Python 3.x, priorizando bibliotecas standard e *de facto* do mercado:
+
+* **Interface CLI:** `argparse` para um parsing robusto de argumentos e flags.
+* **Motor HTTP:** `requests` para gerenciar as consultas aos mecanismos de busca.
+* **Parsing de Dados:** `BeautifulSoup4` para processar o HTML retornado e extrair links/arquivos relevantes.
+* **Evasão (Anti-Blocking):** Implementação de lógica para rotação de `User-Agents` e delays aleatórios entre requisições.
+* **Infraestrutura:** Docker (opcional) para garantir um ambiente de execução isolado e reprodutível.
+
 
 ## 🛠️ Como Subir o Lab (Quick Start)
 
