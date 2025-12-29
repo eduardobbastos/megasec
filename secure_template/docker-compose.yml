@@ -33,5 +33,12 @@ services:
     networks:
       - secure_net
 
-networks:
-  secure_net:
+  compliance:
+    image: aquasec/trivy
+    container_name: security_compliance
+    command: image --format template --template "@contrib/html.tpl" -o /reports/cve_report.html secure_web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./reports:/reports
+    depends_on:
+      - web

@@ -57,13 +57,15 @@ O projeto é composto por três serviços principais isolados em containers Dock
 
 ## 🛡️ Como Realizar Testes de Segurança
 
-Você pode executar testes de vulnerabilidade de duas formas:
+Você pode executar testes de vulnerabilidade de três formas:
 
-### Via Dashboard (Recomendado)
+### Via Dashboard (ZAP e CVE)
 
 1. Acesse o Dashboard em [http://localhost:8088](http://localhost:8088).
-2. Utilize a interface para iniciar uma nova varredura.
-3. Aguarde a finalização; o relatório aparecerá automaticamente na tela de relatórios.
+2. Utilize os botões para iniciar um scan:
+   - **Run/Rerun ZAP Scan**: Executa o teste de penetração ativa (ferramenta ZAP).
+   - **Run CVE Scan**: Executa a verificação de versões e vulnerabilidades conhecidas (ferramenta Trivy).
+3. Aguarde a finalização e clique para abrir o relatório correspondente.
 
 ### Via Linha de Comando (Manual)
 
@@ -74,6 +76,32 @@ docker compose exec zap zap-baseline.py -t http://web:80 -r report.html
 ```
 
 > **Nota**: O relatório `report.html` será salvo na pasta `reports/` e ficará visível instantaneamente no Dashboard.
+
+## 🔍 Itens Verificados no Scan
+
+O scanner de segurança (OWASP ZAP) realiza automaticamente mais de 50 verificações de segurança, incluindo:
+
+### Proteção de Headers HTTP
+- **Strict-Transport-Security (HSTS)**: Garante que a conexão seja sempre HTTPS.
+- **Content-Security-Policy (CSP)**: Protege contra XSS e injeção de dados.
+- **X-Frame-Options**: Previne ataques de Clickjacking.
+- **X-Content-Type-Options**: Bloqueia MIME-sniffing incorreto.
+- **Permissions-Policy**: Restringe acesso a recursos/APIs do navegador.
+
+### Segurança de Cookies
+- **HttpOnly Flag**: Protege cookies de acesso via JavaScript (mitigação de XSS).
+- **Secure Flag**: Garante que cookies sejam transmitidos apenas via HTTPS.
+- **SameSite Attribute**: Protege contra CSRF (Cross-Site Request Forgery).
+
+### Prevenção de Ataques Web
+- **Cross-Site Scripting (XSS)**: Verificações de injeção de scripts em inputs e headers.
+- **CSRF Tokens**: Valida a presença de tokens anti-CSRF em formulários.
+- **Information Leakage**: Busca por comentários suspeitos, mensagens de debug e exposições de IP privado.
+- **Open Redirects**: Valida redirecionamentos para domínios externos não confiáveis.
+
+### Configuração SSL/TLS
+- **Mixed Content**: Garante que recursos não seguros (HTTP) não sejam carregados em páginas HTTPS.
+- **Insecure Transitions**: Verifica redirecionamentos seguros entre HTTP e HTTPS.
 
 ## 📂 Estrutura de Arquivos
 

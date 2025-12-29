@@ -2,7 +2,7 @@ const express = require("express");
 const helmet = require("helmet");
 const path = require("path");
 const fs = require("fs");
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 
 const app = express();
 const PORT = 3000;
@@ -54,27 +54,100 @@ app.get("/api/status", (req, res) => {
   res.json({ reportExists: exists });
 });
 
-// API: Scan
-app.post("/api/scan", (req, res) => {
-  let targetUrl = req.body.url || "https://secure_web:8443";
-
-  console.log(`Starting scan for target: ${targetUrl}`);
+// API: Scan - Streaming
+app.get("/api/scan", (req, res) => {
+  let targetUrl = req.query.url || "https://secure_web:8443";
 
   // Strict validation to prevent command injection
-  // Allow only http/https, alphanumeric, dots, hyphens, colons, slashes
-  // This is a basic check, but stronger than before.
   if (!/^https?:\/\/[a-zA-Z0-9.\-_:\/]+$/.test(targetUrl)) {
-    return res.status(400).json({ success: false, logs: "Invalid URL format" });
+    res.write("Error: Invalid URL format\n");
+    return res.end();
   }
 
-  const command = `docker exec security_scanner zap-baseline.py -t ${targetUrl} -r report.html`;
+  console.log(`Starting stream scan for target: ${targetUrl}`);
 
-  exec(command, (error, stdout, stderr) => {
-    const result = {
-      success: !error || (stdout && stdout.includes("Report generation")),
-      logs: stdout || stderr,
-    };
-    res.json(result);
+  // Set headers for streaming text
+  res.setHeader("Content-Type", "text/plain");
+  res.setHeader("Transfer-Encoding", "chunked");
+
+  const child = spawn("docker", [
+    "exec",
+    "security_scanner",
+    "zap-baseline.py",
+    "-t",
+    targetUrl,
+    "-r",
+    "report.html"
+  ]);
+
+  child.stdout.on("data", (data) => {
+    res.write(data);
+  });
+
+  child.stderr.on("data", (data) => {
+    res.write(data);
+  });
+
+  child.on("close", (code) => {
+    if (code === 0) {
+      res.write("\n[SUCCESS] Scan completed successfully.\n");
+    } else {
+      res.write(`\n[ERROR] Scan process exited with code ${code}\n`);
+    }
+    res.end();
+  });
+});
+
+// Serve CVE report
+app.get("/reports/cve_report.html", (req, res) => {
+  const reportPath = "/app/reports/cve_report.html";
+  if (fs.existsSync(reportPath)) {
+    res.sendFile(reportPath);
+  } else {
+    res.status(404).send("CVE Report not found");
+  }
+});
+
+// API: CVE Scan - Streaming
+app.get("/api/scan-cve", (req, res) => {
+  console.log("Starting CVE scan...");
+
+  res.setHeader("Content-Type", "text/plain");
+  res.setHeader("Transfer-Encoding", "chunked");
+
+  const child = spawn("docker", [
+    "run",
+    "--rm",
+    "-v",
+    "/var/run/docker.sock:/var/run/docker.sock",
+    "-v",
+    `${path.join(__dirname, "../reports")}:/reports`,
+    "aquasec/trivy",
+    "image",
+    "--format",
+    "template",
+    "--template",
+    "@/contrib/html.tpl",
+    "-o",
+    "/reports/cve_report.html",
+    "secure_template-web:latest" // We scan the built image directly
+  ]);
+
+  child.stdout.on("data", (data) => {
+    res.write(data);
+  });
+
+  child.stderr.on("data", (data) => {
+    res.write(data);
+  });
+
+  child.on("close", (code) => {
+    if (code === 0) {
+      res.write("\n[SUCCESS] CVE Scan completed successfully.\n");
+    } else {
+      res.write(`\n[ERROR] CVE Scan process exited with code ${code}\n`);
+    }
+    res.end();
   });
 });
 

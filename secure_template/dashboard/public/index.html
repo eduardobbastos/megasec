@@ -18,12 +18,18 @@
         padding: 30px;
         border-radius: 12px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        width: 400px;
+        width: 600px;
         text-align: center;
       }
       h1 {
         color: #1a73e8;
         margin-bottom: 20px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 10px;
       }
       button {
         background: #1a73e8;
@@ -42,6 +48,28 @@
         background: #ccc;
         cursor: not-allowed;
       }
+      #newScanBtn {
+        background: #5f6368;
+        display: none;
+      }
+      #newScanBtn:hover {
+        background: #4a4d50;
+      }
+      .log-window {
+        margin-top: 20px;
+        background: #1e1e1e;
+        color: #00ff00;
+        font-family: monospace;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: left;
+        height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        font-size: 13px;
+        display: none;
+        border: 1px solid #333;
+      }
       .status {
         margin-top: 20px;
         color: #5f6368;
@@ -50,50 +78,63 @@
         display: inline-block;
         margin-top: 20px;
         text-decoration: none;
-        color: #1a73e8;
+        color: white;
+        background: #34a853;
         font-weight: bold;
-        border: 1px solid #1a73e8;
-        padding: 10px;
+        border: 1px solid #34a853;
+        padding: 10px 20px;
         border-radius: 6px;
+      }
+      .report-link:hover {
+        background: #2d8e47;
       }
       .report-link.hidden {
         display: none;
-      }
-      .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #1a73e8;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-        display: none;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
       }
     </style>
   </head>
   <body>
     <div class="card">
       <h1>🛡️ Security Control</h1>
-      
-      <div style="margin-bottom: 20px; width: 100%;">
-        <label for="urlInput" style="display: block; text-align: left; margin-bottom: 5px; color: #555;">Target URL:</label>
-        <input type="text" id="urlInput" value="https://host.docker.internal:5443" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-        <small style="display: block; text-align: left; color: #777; margin-top: 5px;">
-           For local apps, use <code>host.docker.internal</code> instead of <code>localhost</code>.
+
+      <div style="margin-bottom: 20px; width: 100%">
+        <label
+          for="urlInput"
+          style="
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+            color: #555;
+          "
+          >Target URL:</label
+        >
+        <input
+          type="text"
+          id="urlInput"
+          value="https://secure_web:8443"
+          style="
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+          "
+        />
+        <small
+          style="display: block; text-align: left; color: #777; margin-top: 5px"
+        >
+          For local apps, use <code>host.docker.internal</code> instead of
+          <code>localhost</code>.
         </small>
       </div>
 
-      <button id="scanBtn" onclick="runScan()">▶ Run/Rerun Scan</button>
+      <div class="actions">
+        <button id="scanBtn">▶ Run/Rerun ZAP Scan</button>
+        <button id="cveScanBtn">🛡️ Run CVE Scan</button>
+        <button id="newScanBtn">↺ New Scan</button>
+      </div>
 
-      <div class="spinner" id="spinner"></div>
+      <div class="log-window" id="logWindow"></div>
       <div class="status" id="statusText">Ready</div>
 
       <a
@@ -101,7 +142,15 @@
         target="_blank"
         id="reportBtn"
         class="report-link hidden"
-        >📄 Open Latest Report</a
+        >📄 Open ZAP Report</a
+      >
+      <a
+        href="/reports/cve_report.html"
+        target="_blank"
+        id="cveReportBtn"
+        class="report-link hidden"
+        style="background: #e37400; border-color: #e37400;"
+        >📄 Open CVE Report</a
       >
     </div>
 
@@ -110,47 +159,107 @@
         try {
           const res = await fetch("/api/status");
           const data = await res.json();
-          if (data.reportExists) {
-            document.getElementById("reportBtn").classList.remove("hidden");
+          if (data.reportExists && document.getElementById("logWindow").style.display === "none") {
+             // Only show report link if we are not in a fresh state
+             document.getElementById("reportBtn").classList.remove("hidden");
           }
         } catch (e) {}
       }
       checkStatus();
 
-      async function runScan() {
-        const btn = document.getElementById("scanBtn");
-        const spinner = document.getElementById("spinner");
-        const status = document.getElementById("statusText");
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("scanBtn").addEventListener("click", () => runScan("zap"));
+        document.getElementById("cveScanBtn").addEventListener("click", () => runScan("cve"));
+        document.getElementById("newScanBtn").addEventListener("click", resetUI);
+      });
 
-        btn.disabled = true;
-        spinner.style.display = "block";
-        status.textContent = "Scanning... (this takes about 1-2 mins)";
+      function resetUI() {
+          const logWindow = document.getElementById("logWindow");
+          const scanBtn = document.getElementById("scanBtn");
+          const cveScanBtn = document.getElementById("cveScanBtn");
+          const newScanBtn = document.getElementById("newScanBtn");
+          const status = document.getElementById("statusText");
+          const input = document.getElementById("urlInput");
+          const reportBtn = document.getElementById("reportBtn");
+          const cveReportBtn = document.getElementById("cveReportBtn");
+
+          logWindow.style.display = "none";
+          logWindow.textContent = "";
+          scanBtn.style.display = "inline-block";
+          cveScanBtn.style.display = "inline-block";
+          scanBtn.disabled = false;
+          cveScanBtn.disabled = false;
+          newScanBtn.style.display = "none";
+          status.textContent = "Ready";
+          status.style.color = "#5f6368";
+          input.disabled = false;
+          reportBtn.classList.add("hidden");
+          cveReportBtn.classList.add("hidden");
+      }
+
+      async function runScan(type) {
+        const scanBtn = document.getElementById("scanBtn");
+        const cveScanBtn = document.getElementById("cveScanBtn");
+        const newScanBtn = document.getElementById("newScanBtn");
+        const logWindow = document.getElementById("logWindow");
+        const status = document.getElementById("statusText");
+        const input = document.getElementById("urlInput");
+        const reportBtn = document.getElementById("reportBtn");
+        const cveReportBtn = document.getElementById("cveReportBtn");
+
+        // UI Prep
+        scanBtn.disabled = true;
+        cveScanBtn.disabled = true;
+        input.disabled = true;
+        reportBtn.classList.add("hidden");
+        cveReportBtn.classList.add("hidden");
+        
+        logWindow.style.display = "block";
+        logWindow.textContent = type === 'zap' ? "Initializing ZAP scan...\n" : "Initializing CVE scan (this may take a while to download DB)...\n";
+        
+        status.textContent = "Scanning in progress...";
         status.style.color = "#e37400";
 
         try {
-          const url = document.getElementById("urlInput").value;
-          const res = await fetch("/api/scan", { 
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ url: url })
-          });
-          const data = await res.json();
+          const url = input.value;
+          const endpoint = type === 'zap' ? `/api/scan?url=${encodeURIComponent(url)}` : '/api/scan-cve';
+          
+          const response = await fetch(endpoint);
+          
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
 
-          if (data.success) {
-              status.textContent = "Scan Completed!";
-              status.style.color = "green";
-              document.getElementById("reportBtn").href = `/reports/report.html?t=${Date.now()}`; // Prevent caching
-              document.getElementById("reportBtn").classList.remove("hidden");
-          } else {
-              status.textContent = "Error: " + (data.logs || "Unknown error");
-              status.style.color = "red";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const text = decoder.decode(value);
+            logWindow.textContent += text;
+            logWindow.scrollTop = logWindow.scrollHeight; // Auto scroll
           }
+
+          status.textContent = "Scan Completed!";
+          status.style.color = "green";
+          
+          if (type === 'zap') {
+             reportBtn.href = `/reports/report.html?t=${Date.now()}`;
+             reportBtn.classList.remove("hidden");
+          } else {
+             cveReportBtn.href = `/reports/cve_report.html?t=${Date.now()}`;
+             cveReportBtn.classList.remove("hidden");
+          }
+          
+          scanBtn.style.display = "none";
+          cveScanBtn.style.display = "none";
+          newScanBtn.style.display = "inline-block";
+
         } catch (error) {
-          status.textContent = "Error: " + error.message;
+          logWindow.textContent += `\n[FATAL ERROR]: ${error.message}`;
+          status.textContent = "Error occurred";
           status.style.color = "red";
-        } finally {
-          btn.disabled = false;
-          spinner.style.display = "none";
+          scanBtn.disabled = false;
+          cveScanBtn.disabled = false;
+          input.disabled = false;
         }
       }
     </script>
