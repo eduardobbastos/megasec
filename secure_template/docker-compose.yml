@@ -42,3 +42,6 @@ services:
       - ./reports:/reports
     depends_on:
       - web
+
+networks:
+  secure_net:
