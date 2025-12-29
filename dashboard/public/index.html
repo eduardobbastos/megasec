@@ -65,6 +65,15 @@
       background: #4a4d50;
     }
 
+    #stopScanBtn {
+      background: #d93025;
+      display: none;
+    }
+
+    #stopScanBtn:hover {
+      background: #a50e0e;
+    }
+
     .log-window {
       margin-top: 20px;
       background: #1e1e1e;
@@ -159,16 +168,7 @@
         <div id="summ-zap" class="summary-score">--</div>
         <small>High/Med</small>
       </div>
-      <div class="summary-card" style="border-left-color: #e37400;">
-        <h3>CVEs</h3>
-        <div id="summ-cve" class="summary-score">--</div>
-        <small>Crit/High</small>
-      </div>
-      <div class="summary-card" style="border-left-color: #a142f4;">
-        <h3>Secrets</h3>
-        <div id="summ-sec" class="summary-score">--</div>
-        <small>Found</small>
-      </div>
+
     </div>
 
     <div style="margin-bottom: 20px; width: 100%">
@@ -193,8 +193,8 @@
 
     <div class="actions">
       <button id="scanBtn">▶ Run/Rerun ZAP Scan</button>
-      <button id="cveScanBtn">🛡️ Run CVE Scan</button>
-      <button id="secretScanBtn" style="background-color: #a142f4;">🔑 Run Secret Scan</button>
+      <button id="fullScanBtn" style="background-color: #d93025;">⚔️ Run Full Attack Scan</button>
+      <button id="stopScanBtn">⬛ Stop Scan</button>
       <button id="newScanBtn">↺ New Scan</button>
     </div>
 
@@ -215,28 +215,14 @@
         </p>
       </details>
 
-      <details style="margin-bottom: 10px;">
-        <summary style="font-weight: bold; cursor: pointer; color: #e37400;">📦 Infrastructure & CVEs (Trivy)</summary>
-        <p style="margin: 5px 0 0 15px; font-size: 14px; color: #444;">
-          Inspects the Docker image and OS packages for:
-        <ul style="margin: 5px 0 0 20px;">
-          <li><strong>OS Vulnerabilities:</strong> Known CVEs in Alpine/Debian packages.</li>
-          <li><strong>Library Issues:</strong> Outdated npm/pip dependencies.</li>
-          <li><strong>Misconfigurations:</strong> Running as root, exposed secrets.</li>
-        </ul>
-        </p>
-      </details>
+      <div
+        style="background: #fff3cd; padding: 10px; border-left: 5px solid #ffc107; margin-top: 10px; font-size: 13px;">
+        <strong>⚡ Tipos de Scan:</strong><br>
+        1. <strong>ZAP Baseline (Blue):</strong> Rápido, passivo (não ataca), ideal para CI/CD e checks rápidos.<br>
+        2. <strong>Full Attack (Red):</strong> Lento, agressivo, usa AJAX Spider (Chrome) e tenta invadir o site. Use
+        com cuidado!
+      </div>
 
-      <details>
-        <summary style="font-weight: bold; cursor: pointer; color: #a142f4;">🔑 Code Secrets (TruffleHog)</summary>
-        <p style="margin: 5px 0 0 15px; font-size: 14px; color: #444;">
-          Scans the source code (`/app`) for leaked credentials:
-        <ul style="margin: 5px 0 0 20px;">
-          <li><strong>Hardcoded Secrets:</strong> AWS/GCP keys, API Tokens (Slack, Stripe).</li>
-          <li><strong>Private Keys:</strong> SSH keys, PGP certificates.</li>
-          <li><strong>Passwords:</strong> High entropy strings resembling passwords.</li>
-        </ul>
-        </p>
       </details>
     </div>
 
@@ -244,10 +230,7 @@
     <div class="status" id="statusText">Ready</div>
 
     <a href="/reports/report.html" target="_blank" id="reportBtn" class="report-link hidden">📄 Open ZAP Report</a>
-    <a href="/reports/cve_report.html" target="_blank" id="cveReportBtn" class="report-link hidden"
-      style="background: #e37400; border-color: #e37400;">📄 Open CVE Report</a>
-    <a href="/reports/secrets_report.json" target="_blank" id="secretReportBtn" class="report-link hidden"
-      style="background: #a142f4; border-color: #a142f4;">📄 Open Secrets Report (JSON)</a>
+
   </div>
 
   <script>
@@ -274,16 +257,7 @@
         // ZAP
         zapScore.innerHTML = `<span class="risk-high">${data.zap.high}</span> / <span class="risk-medium">${data.zap.medium}</span>`;
 
-        // CVE
-        cveScore.innerHTML = `<span class="risk-high">${data.cve.critical}</span> / <span class="risk-medium">${data.cve.high}</span>`;
-
-        // Secrets
-        if (data.secrets.count > 0) {
-          secScore.innerHTML = `<span class="risk-high">${data.secrets.count}</span>`;
-        } else {
-          secScore.innerHTML = `<span class="risk-safe">0</span>`;
-        }
-
+        // CVE & Secrets Removed
       } catch (e) { console.error("Summary fetch failed", e); }
     }
 
@@ -292,78 +266,71 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("scanBtn").addEventListener("click", () => runScan("zap"));
-      document.getElementById("cveScanBtn").addEventListener("click", () => runScan("cve"));
-      document.getElementById("secretScanBtn").addEventListener("click", () => runScan("secret"));
+      document.getElementById("fullScanBtn").addEventListener("click", () => runScan("full"));
+      document.getElementById("stopScanBtn").addEventListener("click", stopScan);
       document.getElementById("newScanBtn").addEventListener("click", resetUI);
     });
 
-    function resetUI() {
+    async function resetUI() {
+      // Call endpoint to delete old reports
+      try {
+        await fetch("/api/reset", { method: "POST" });
+      } catch (e) {
+        console.error("Failed to reset reports", e);
+      }
+
       const logWindow = document.getElementById("logWindow");
       const scanBtn = document.getElementById("scanBtn");
-      const cveScanBtn = document.getElementById("cveScanBtn");
-      const secretScanBtn = document.getElementById("secretScanBtn");
+      const fullScanBtn = document.getElementById("fullScanBtn");
       const newScanBtn = document.getElementById("newScanBtn");
       const status = document.getElementById("statusText");
       const input = document.getElementById("urlInput");
       const reportBtn = document.getElementById("reportBtn");
-      const cveReportBtn = document.getElementById("cveReportBtn");
-      const secretReportBtn = document.getElementById("secretReportBtn");
+      const zapScore = document.getElementById("summ-zap");
 
       logWindow.style.display = "none";
       logWindow.textContent = "";
       scanBtn.style.display = "inline-block";
-      cveScanBtn.style.display = "inline-block";
-      secretScanBtn.style.display = "inline-block";
+      fullScanBtn.style.display = "inline-block";
       scanBtn.disabled = false;
-      cveScanBtn.disabled = false;
-      secretScanBtn.disabled = false;
+      fullScanBtn.disabled = false;
       newScanBtn.style.display = "none";
       status.textContent = "Ready";
       status.style.color = "#5f6368";
       input.disabled = false;
       reportBtn.classList.add("hidden");
-      cveReportBtn.classList.add("hidden");
-      secretReportBtn.classList.add("hidden");
 
-      updateSummary(); // Refresh summary on reset
+      // Manually reset summary text
+      zapScore.innerHTML = "--";
     }
 
     async function runScan(type) {
       const scanBtn = document.getElementById("scanBtn");
-      const cveScanBtn = document.getElementById("cveScanBtn");
-      const secretScanBtn = document.getElementById("secretScanBtn");
+      const fullScanBtn = document.getElementById("fullScanBtn");
       const newScanBtn = document.getElementById("newScanBtn");
       const logWindow = document.getElementById("logWindow");
       const status = document.getElementById("statusText");
       const input = document.getElementById("urlInput");
       const reportBtn = document.getElementById("reportBtn");
-      const cveReportBtn = document.getElementById("cveReportBtn");
-      const secretReportBtn = document.getElementById("secretReportBtn");
 
       // UI Prep
       scanBtn.disabled = true;
-      cveScanBtn.disabled = true;
-      secretScanBtn.disabled = true;
+      fullScanBtn.disabled = true;
       input.disabled = true;
       reportBtn.classList.add("hidden");
-      cveReportBtn.classList.add("hidden");
-      secretReportBtn.classList.add("hidden");
+      stopScanBtn.style.display = "inline-block";
 
       logWindow.style.display = "block";
-
-      if (type === 'zap') logWindow.textContent = "Initializing ZAP scan...\n";
-      else if (type === 'cve') logWindow.textContent = "Initializing CVE scan (this may take a while to download DB)...\n";
-      else logWindow.textContent = "Initializing Secret scan (codebase analysis)...\n";
+      if (type === 'zap') logWindow.textContent = "Initializing ZAP Baseline Scan (Passive)...\n";
+      else logWindow.textContent = "Initializing ZAP FULL ATTACK Scan (Active + AJAX, this will take time)...\n";
 
       status.textContent = "Scanning in progress...";
       status.style.color = "#e37400";
 
       try {
         const url = input.value;
-        let endpoint;
-        if (type === 'zap') endpoint = `/api/scan?url=${encodeURIComponent(url)}`;
-        else if (type === 'cve') endpoint = '/api/scan-cve';
-        else endpoint = '/api/scan-secrets';
+        let endpoint = `/api/scan?url=${encodeURIComponent(url)}`;
+        if (type === 'full') endpoint = `/api/scan-full?url=${encodeURIComponent(url)}`;
 
         const response = await fetch(endpoint);
 
@@ -382,22 +349,16 @@
         status.textContent = "Scan Completed!";
         status.style.color = "green";
 
-        if (type === 'zap') {
+        if (type === 'zap' || type === 'full') {
           reportBtn.href = `/reports/report.html?t=${Date.now()}`;
           reportBtn.classList.remove("hidden");
-        } else if (type === 'cve') {
-          cveReportBtn.href = `/reports/cve_report.html?t=${Date.now()}`;
-          cveReportBtn.classList.remove("hidden");
-        } else {
-          secretReportBtn.href = `/reports/secrets_report.json?t=${Date.now()}`;
-          secretReportBtn.classList.remove("hidden");
         }
 
         updateSummary(); // Refresh summary scores
 
         scanBtn.style.display = "none";
-        cveScanBtn.style.display = "none";
-        secretScanBtn.style.display = "none";
+        fullScanBtn.style.display = "none";
+        stopScanBtn.style.display = "none";
         newScanBtn.style.display = "inline-block";
 
       } catch (error) {
@@ -405,9 +366,22 @@
         status.textContent = "Error occurred";
         status.style.color = "red";
         scanBtn.disabled = false;
-        cveScanBtn.disabled = false;
-        secretScanBtn.disabled = false;
+        fullScanBtn.disabled = false;
+        stopScanBtn.style.display = "none";
         input.disabled = false;
+      }
+    }
+
+    async function stopScan() {
+      if (!confirm("Are you sure you want to stop the current scan?")) return;
+
+      const logWindow = document.getElementById("logWindow");
+      try {
+        const res = await fetch("/api/stop-scan", { method: "POST" });
+        const data = await res.json();
+        logWindow.textContent += `\n[INFO] ${data.message}\n`;
+      } catch (e) {
+        logWindow.textContent += `\n[ERROR] Failed to stop scan: ${e.message}\n`;
       }
     }
   </script>
